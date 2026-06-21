@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, status
+from app.embeddings import EMBEDDING_DIMENSIONS, EMBEDDING_MODEL, embed_chunks
 
 from app.chunking import chunk_text
 from app.memory import add_chunks
@@ -41,13 +42,23 @@ def ingest_document(request: IngestRequest) -> IngestResponse:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Text cannot be empty.",
                 )
+        
+        try:
+            embedded_chunks = embed_chunks(chunks)
+        except Exception as exc:
+            raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail=f"Failed to create embeddings: {str(exc)}",
+                ) from exc
 
-        add_chunks(chunks)
+        add_chunks(embedded_chunks)
 
         return IngestResponse(
                 message="Document chunked successfully.",
                 source_name=request.source_name,
                 chunks_created=len(chunks),
+                embedding_model=EMBEDDING_MODEL,
+                embedding_dimensions=EMBEDDING_DIMENSIONS,
                 chunks=[
                 ChunkPreview(
                         chunk_id=chunk.id,
@@ -55,7 +66,7 @@ def ingest_document(request: IngestRequest) -> IngestResponse:
                         char_count=len(chunk.content),
                         preview=chunk.content[:160],
                 )
-                for chunk in chunks
+                for chunk in embedded_chunks
                 ],
         )
 

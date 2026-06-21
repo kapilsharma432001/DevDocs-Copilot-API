@@ -1,14 +1,14 @@
-from app.chunking import DocumentChunk
+from app.embeddings import EmbeddedDocumentChunk
 
 
-_DOCUMENT_CHUNKS: list[DocumentChunk] = []
+_DOCUMENT_CHUNKS: list[EmbeddedDocumentChunk] = []
 
 
-def add_chunks(chunks: list[DocumentChunk]) -> None:
+def add_chunks(chunks: list[EmbeddedDocumentChunk]) -> None:
     _DOCUMENT_CHUNKS.extend(chunks)
 
 
-def list_chunks() -> list[DocumentChunk]:
+def list_chunks() -> list[EmbeddedDocumentChunk]:
     return list(_DOCUMENT_CHUNKS)
 
 
