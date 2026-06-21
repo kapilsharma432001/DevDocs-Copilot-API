@@ -1,9 +1,12 @@
 from typing import List, Optional
+
 from pydantic import BaseModel, Field
 
+
 class HealthResponse(BaseModel):
-    status: str = Field(..., examples = ["ok"])
-    service: str = Field(..., examples = ["DevDocs Copilot API"])
+    status: str = Field(..., examples=["ok"])
+    service: str = Field(..., examples=["DevDocs Copilot API"])
+
 
 class IngestRequest(BaseModel):
     source_name: str = Field(
@@ -17,10 +20,19 @@ class IngestRequest(BaseModel):
         description="Raw text content that should be chunked, embedded, and stored.",
     )
 
+
+class ChunkPreview(BaseModel):
+    chunk_id: str
+    chunk_index: int
+    char_count: int
+    preview: str
+
+
 class IngestResponse(BaseModel):
     message: str
     source_name: str
     chunks_created: int
+    chunks: List[ChunkPreview] = Field(default_factory=list)
 
 
 class AskRequest(BaseModel):
@@ -30,10 +42,11 @@ class AskRequest(BaseModel):
         description="Question that should be answered using the indexed documents.",
     )
 
+
 class SourceChunk(BaseModel):
     source_name: str
     chunk_text: str
-    source: Optional[float] = None
+    score: Optional[float] = None
 
 
 class AskResponse(BaseModel):
@@ -47,6 +60,7 @@ class AgentAskRequest(BaseModel):
         examples=["Explain RAG and create a revision task for me."],
         description="Question or instruction that may require retrieval and tool usage.",
     )
+
 
 class AgentStep(BaseModel):
     step_name: str
