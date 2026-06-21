@@ -53,7 +53,7 @@ def ingest_document(request: IngestRequest) -> IngestResponse:
         ) from exc
 
     return IngestResponse(
-        message="Document ingested successfully.",
+        message="Document ingested successfully into PGVector.",
         source_name=request.source_name,
         chunks_created=len(chunks),
         embedding_model=EMBEDDING_MODEL,
@@ -98,14 +98,19 @@ def ask_agent(request: AgentAskRequest) -> AgentAskResponse:
     if not results:
         generation_detail = "Skipped LLM generation because no indexed context was available."
 
+    store_size = vector_store_size()
+    store_detail = (
+        "Vector store size is not calculated for PGVector yet."
+        if store_size == -1
+        else f"The store currently contains {store_size} chunk(s)."
+)
     return AgentAskResponse(
         answer=rag_answer.answer,
         steps=[
             AgentStep(
                 step_name="retrieve",
                 detail=(
-                    f"Retrieved {len(results)} relevant chunk(s) from the vector store. "
-                    f"The store currently contains {vector_store_size()} chunk(s)."
+                    f"Retrieved {len(results)} relevant chunk(s) from PGVector. {store_detail}"
                 ),
             ),
             AgentStep(

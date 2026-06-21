@@ -1,39 +1,35 @@
-from pathlib import Path
+import os
 
 from langchain_core.documents import Document
-from langchain_core.vectorstores import InMemoryVectorStore
+
 
 from app.chunking import DocumentChunk
 from app.embeddings import get_embedding_model
+from dotenv import load_dotenv
+from langchain_postgres import PGVector
 
-VECTOR_STORE_PATH = Path(__file__).resolve().parents[1] / ".data" / "vector_store.json"
+load_dotenv()
 
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql+psycopg://devdocs:devdocs@localhost:5433/devdocs",
+)
 
-def _create_vector_store() -> InMemoryVectorStore:
-    return InMemoryVectorStore(
-        embedding=get_embedding_model(),
+PGVECTOR_COLLECTION_NAME = os.getenv(
+    "PGVECTOR_COLLECTION_NAME",
+    "devdocs_chunks",
+)
+
+def _create_vector_store() -> PGVector:
+    return PGVector(
+        embeddings=get_embedding_model(),
+        collection_name=PGVECTOR_COLLECTION_NAME,
+        connection=DATABASE_URL,
+        use_jsonb=True,
     )
 
 
-def _load_vector_store() -> InMemoryVectorStore:
-    if VECTOR_STORE_PATH.exists():
-        try:
-            return InMemoryVectorStore.load(
-                path=str(VECTOR_STORE_PATH),
-                embedding=get_embedding_model(),
-            )
-        except Exception:
-            return _create_vector_store()
-
-    return _create_vector_store()
-
-
-def _persist_vector_store() -> None:
-    _vector_store.dump(str(VECTOR_STORE_PATH))
-
-
-_vector_store = _load_vector_store()
-
+_vector_store = _create_vector_store()
 
 def add_chunks_to_vector_store(chunks: list[DocumentChunk]) -> list[str]:
     """
@@ -66,7 +62,6 @@ def add_chunks_to_vector_store(chunks: list[DocumentChunk]) -> list[str]:
         ids=ids,
     )
 
-    _persist_vector_store()
     return ids
 
 
@@ -82,4 +77,9 @@ def similarity_search(query: str, top_k: int = 3) -> list[tuple[Document, float]
 
 
 def vector_store_size() -> int:
-    return len(_vector_store.store)
+    """
+    PGVector stores data in Postgres, so we do not directly inspect an in-memory dict.
+
+    We will implement an exact DB count later when we add our own document/chunk table.
+    """
+    return -1
