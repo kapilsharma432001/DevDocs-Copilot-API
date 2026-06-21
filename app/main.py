@@ -1,11 +1,14 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, status
 
+from app.chunking import chunk_text
+from app.memory import add_chunks
 from app.schemas import (
     AgentAskRequest,
     AgentAskResponse,
     AgentStep,
     AskRequest,
     AskResponse,
+    ChunkPreview,
     HealthResponse,
     IngestRequest,
     IngestResponse,
@@ -27,12 +30,35 @@ def health_check() -> HealthResponse:
 
 @app.post("/ingest", response_model = IngestResponse)
 def ingest_document(request: IngestRequest) -> IngestResponse:
-        # For now it's just a dummy implementation
-        return IngestResponse(
-        message="Document received successfully. Chunking is not implemented yet.",
+
+        chunks = chunk_text(
         source_name=request.source_name,
-        chunks_created=0,
-    )
+        text=request.text,
+        )
+
+        if not chunks:
+                raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Text cannot be empty.",
+                )
+
+        add_chunks(chunks)
+
+        return IngestResponse(
+                message="Document chunked successfully.",
+                source_name=request.source_name,
+                chunks_created=len(chunks),
+                chunks=[
+                ChunkPreview(
+                        chunk_id=chunk.id,
+                        chunk_index=chunk.chunk_index,
+                        char_count=len(chunk.content),
+                        preview=chunk.content[:160],
+                )
+                for chunk in chunks
+                ],
+        )
+
 
 @app.post("/agent/ask", response_model = AgentAskResponse)
 def ask_agent(request: AgentAskRequest) -> AgentAskResponse:
