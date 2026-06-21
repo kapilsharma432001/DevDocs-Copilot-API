@@ -1,5 +1,4 @@
 from fastapi import FastAPI, HTTPException, status
-from app.embeddings import EMBEDDING_DIMENSIONS, EMBEDDING_MODEL, embed_chunks
 
 from app.chunking import chunk_text
 from app.memory import add_chunks
@@ -15,6 +14,8 @@ from app.schemas import (
     IngestResponse,
     SourceChunk,
 )
+from app.embeddings import EMBEDDING_DIMENSIONS, EMBEDDING_MODEL
+from app.vector_store import add_chunks_to_vector_store, similarity_search
 
 app = FastAPI(
     title="DevDocs Copilot API",
@@ -44,43 +45,38 @@ def ingest_document(request: IngestRequest) -> IngestResponse:
                 )
         
         try:
-            embedded_chunks = embed_chunks(chunks)
+            add_chunks_to_vector_store(chunks)
         except Exception as exc:
             raise HTTPException(
-                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail=f"Failed to create embeddings: {str(exc)}",
-                ) from exc
-
-        add_chunks(embedded_chunks)
-
-        return IngestResponse(
-                message="Document chunked successfully.",
-                source_name=request.source_name,
-                chunks_created=len(chunks),
-                embedding_model=EMBEDDING_MODEL,
-                embedding_dimensions=EMBEDDING_DIMENSIONS,
-                chunks=[
-                ChunkPreview(
-                        chunk_id=chunk.id,
-                        chunk_index=chunk.chunk_index,
-                        char_count=len(chunk.content),
-                        preview=chunk.content[:160],
-                )
-                for chunk in embedded_chunks
-                ],
-        )
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to add chunks to vector store: {str(exc)}",
+        ) from exc
 
 
-@app.post("/agent/ask", response_model = AgentAskResponse)
-def ask_agent(request: AgentAskRequest) -> AgentAskResponse:
-        # Dummy implementation for now
-        return AgentAskResponse(
-                answer = "Agent answer generation is not implemented yet. You asked: {request.question}",
-                steps = [
-                        AgentStep(
-                                step_name = "received_question",
-                                detail = f"Received the question: {request.question}"
-                        )
-                ],
-                sources = [],
-        )
+@app.post("/ask", response_model = AgentAskResponse)
+def ask_agent(request: AgentAskRequest) -> AgentAskResponse:   
+    try:
+        results = similarity_search(
+        query=request.question,
+        top_k=request.top_k,
+    )
+    except Exception as exc:
+        raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail=f"Failed to perform semantic search: {str(exc)}",
+    ) from exc
+    
+    return AskResponse(
+        answer=(
+            "Semantic search completed using LangChain vector store. "
+            "RAG answer generation is not implemented yet."
+        ),
+        sources=[
+            SourceChunk(
+                source_name=document.metadata.get("source_name", "unknown"),
+                chunk_text=document.page_content,
+                score=round(score, 4),
+            )
+            for document, score in results
+        ],
+    )   
