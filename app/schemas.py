@@ -62,6 +62,12 @@ class AgentAskRequest(BaseModel):
         examples=["Explain RAG and create a revision task for me."],
         description="Question or instruction that may require retrieval and tool usage.",
     )
+    top_k: int = Field(
+        default=3,
+        ge=1,
+        le=10,
+        description="Number of relevant chunks to retrieve before generating the answer.",
+    )
 
 
 class AgentStep(BaseModel):

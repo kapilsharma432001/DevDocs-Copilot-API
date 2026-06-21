@@ -7,11 +7,11 @@ from langchain_openai import OpenAIEmbeddings
 
 from app.chunking import DocumentChunk
 
-
 load_dotenv()
 
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
 EMBEDDING_DIMENSIONS = int(os.getenv("EMBEDDING_DIMENSIONS", "1536"))
+
 
 @dataclass(frozen=True)
 class EmbeddedDocumentChunk:
@@ -21,6 +21,7 @@ class EmbeddedDocumentChunk:
     content: str
     metadata: dict[str, Any]
     embedding: list[float]
+
 
 def get_embedding_model() -> OpenAIEmbeddings:
     """
@@ -36,6 +37,7 @@ def get_embedding_model() -> OpenAIEmbeddings:
         model=EMBEDDING_MODEL,
         dimensions=EMBEDDING_DIMENSIONS,
     )
+
 
 def embed_chunks(chunks: list[DocumentChunk]) -> list[EmbeddedDocumentChunk]:
     """
@@ -59,7 +61,6 @@ def embed_chunks(chunks: list[DocumentChunk]) -> list[EmbeddedDocumentChunk]:
     vectors = embedding_model.embed_documents(texts)
     embedded_chunks: list[EmbeddedDocumentChunk] = []
 
-
     for chunk, vector in zip(chunks, vectors):
         embedded_chunks.append(
             EmbeddedDocumentChunk(
@@ -76,7 +77,9 @@ def embed_chunks(chunks: list[DocumentChunk]) -> list[EmbeddedDocumentChunk]:
             )
         )
 
-    print(f"Embedded {len(embedded_chunks)} - chunks:- \n{embedded_chunks} -  chunks using model {EMBEDDING_MODEL} with {EMBEDDING_DIMENSIONS} dimensions.")
+    print(
+        f"Embedded {len(embedded_chunks)} - chunks:- \n{embedded_chunks} -  chunks using model {EMBEDDING_MODEL} with {EMBEDDING_DIMENSIONS} dimensions."
+    )
     return embedded_chunks
 
 
@@ -95,5 +98,3 @@ def embed_query_text(text: str) -> list[float]:
 
     embedding_model = get_embedding_model()
     return embedding_model.embed_query(normalized_text)
-
-
