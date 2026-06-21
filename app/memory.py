@@ -1,6 +1,5 @@
 from app.embeddings import EmbeddedDocumentChunk
 
-
 _DOCUMENT_CHUNKS: list[EmbeddedDocumentChunk] = []
 
 

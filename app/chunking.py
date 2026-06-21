@@ -8,6 +8,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 DEFAULT_CHUNK_SIZE = 800
 DEFAULT_CHUNK_OVERLAP = 120
 
+
 @dataclass(frozen=True)
 class DocumentChunk:
     id: str
@@ -15,6 +16,7 @@ class DocumentChunk:
     chunk_index: int
     content: str
     metadata: dict[str, Any]
+
 
 def chunk_text(source_name: str, text: str) -> list[DocumentChunk]:
     """
@@ -29,7 +31,7 @@ def chunk_text(source_name: str, text: str) -> list[DocumentChunk]:
 
     if not normalized_text:
         return []
-    
+
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=DEFAULT_CHUNK_SIZE,
         chunk_overlap=DEFAULT_CHUNK_OVERLAP,
