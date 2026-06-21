@@ -32,6 +32,8 @@ class IngestResponse(BaseModel):
     message: str
     source_name: str
     chunks_created: int
+    embedding_model: str
+    embedding_dimensions: int
     chunks: List[ChunkPreview] = Field(default_factory=list)
 
 
