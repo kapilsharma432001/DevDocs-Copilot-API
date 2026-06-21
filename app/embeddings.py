@@ -78,3 +78,22 @@ def embed_chunks(chunks: list[DocumentChunk]) -> list[EmbeddedDocumentChunk]:
 
     print(f"Embedded {len(embedded_chunks)} - chunks:- \n{embedded_chunks} -  chunks using model {EMBEDDING_MODEL} with {EMBEDDING_DIMENSIONS} dimensions.")
     return embedded_chunks
+
+
+def embed_query_text(text: str) -> list[float]:
+    """
+    Convert a user question/search query into an embedding vector.
+
+    Why?
+    - Document chunks and user questions must be embedded into the same vector space.
+    - Once both are vectors, we can compare them using cosine similarity.
+    """
+    normalized_text = text.strip()
+
+    if not normalized_text:
+        return []
+
+    embedding_model = get_embedding_model()
+    return embedding_model.embed_query(normalized_text)
+
+
