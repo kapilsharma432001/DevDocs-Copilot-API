@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Literal
 
 from pydantic import BaseModel, Field
 
@@ -67,6 +67,10 @@ class AgentAskRequest(BaseModel):
         ge=1,
         le=10,
         description="Number of relevant chunks to retrieve before generating the answer.",
+    )
+    search_mode: Literal["semantic", "keyword", "hybrid"] = Field(
+        default="hybrid",
+        description="Retrieval strategy to use before generating the answer.",
     )
 
 
