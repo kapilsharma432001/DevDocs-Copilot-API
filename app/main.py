@@ -14,6 +14,8 @@ from app.schemas import (
 from app.embeddings import EMBEDDING_DIMENSIONS, EMBEDDING_MODEL
 from app.vector_store import add_chunks_to_vector_store, similarity_search, vector_store_size
 from app.rag import generate_rag_answer
+from app.hybrid_search import hybrid_search
+from app.keyword_search import keyword_search
 
 app = FastAPI(
     title="DevDocs Copilot API",
@@ -69,18 +71,41 @@ def ingest_document(request: IngestRequest) -> IngestResponse:
         ],
     )
 
+# Helper function
+def retrieve_documents(
+    question: str,
+    top_k: int,
+    search_mode: str,
+):
+    if search_mode == "semantic":
+        return similarity_search(
+            query=question,
+            top_k=top_k,
+        )
+
+    if search_mode == "keyword":
+        return keyword_search(
+            query=question,
+            limit=top_k,
+        )
+
+    return hybrid_search(
+        query=question,
+        top_k=top_k,
+    )
 
 @app.post("/ask", response_model=AgentAskResponse)
 def ask_agent(request: AgentAskRequest) -> AgentAskResponse:
     try:
-        results = similarity_search(
-            query=request.question,
+        results = retrieve_documents(
+            question=request.question,
             top_k=request.top_k,
+            search_mode=request.search_mode,
         )
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to perform semantic search: {str(exc)}",
+            detail=f"Failed to perform {request.search_mode} search: {str(exc)}",
         ) from exc
 
     try:
@@ -110,7 +135,7 @@ def ask_agent(request: AgentAskRequest) -> AgentAskResponse:
             AgentStep(
                 step_name="retrieve",
                 detail=(
-                    f"Retrieved {len(results)} relevant chunk(s) from PGVector. {store_detail}"
+                    f"Retrieved {len(results)} relevant chunk(s) using {request.search_mode} search. {store_detail}"
                 ),
             ),
             AgentStep(
